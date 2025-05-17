@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>점심 메뉴 룰렛</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      background: #f8f8f8;
+      padding: 20px;
+      margin: 0;
+      overflow-x: hidden;
+    }
+    #roulette-container {
+      position: relative;
+      width: 90vw;
+      max-width: 400px;
+      height: 90vw;
+      max-height: 400px;
+      margin: 0 auto;
+    }
+    #roulette {
+      width: 100%;
+      height: 100%;
+      transform: rotate(0deg);
+    }
+    #pointer {
+      position: absolute;
+      top: 50%;
+      right: -25px;
+      transform: translateY(-50%) rotate(-90deg);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-bottom: 25px solid red;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+    #menu-form {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #menu-input {
+      padding: 8px;
+      font-size: 16px;
+      flex: 1 1 auto;
+    }
+    @media (max-width: 480px) {
+      button, #menu-input {
+        font-size: 14px;
+      }
+      #result {
+        font-size: 16px;
+      }
+    }
+    .fireworks {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000;
+      font-size: 32px;
+      animation: burst 1s ease-out forwards, flash 0.3s alternate 5;
+    }
+    @keyframes burst {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(2); }
+    }
+    @keyframes flash {
+      from { filter: brightness(1); }
+      to { filter: brightness(2.5); }
+    }
+    .popup {
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -30%);
+      background: white;
+      border: 2px solid #888;
+      padding: 40px;
+      font-size: 26px;
+      z-index: 1001;
+      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+      border-radius: 12px;
+    }
+    .popup button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="roulette-container">
+    <div id="pointer"></div>
+    <canvas id="roulette" width="400" height="400"></canvas>
+  </div>
+  <button onclick="spinRoulette()">돌리기</button>
+  <div id="result"></div>
+  <form id="menu-form">
+    <input type="text" id="menu-input" placeholder="새 메뉴 추가" required />
+    <button type="button" onclick="addMenu()">추가</button>
+  </form>
+  <div id="popup" class="popup" style="display:none;"></div>
+  <script>
+    const canvas = document.getElementById('roulette');
+    const ctx = canvas.getContext('2d');
+    let size = canvas.width;
+    let center = size / 2;
+
+    function resizeCanvas() {
+      const container = document.getElementById('roulette-container');
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      size = canvas.width;
+      center = size / 2;
+      drawRoulette(currentRotation);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(resizeCanvas, 300);
+    });
+
+    let menuItems = JSON.parse(localStorage.getItem('menuItems')) || [
+      '김치찌개', '된장찌개', '비빔밥', '불고기', '돈까스', '제육볶음', '라면', '샐러드'
+    ];
+
+    const softRainbowColors = ['#FFB6C1', '#FFDAB9', '#FAFAD2', '#E0FFFF', '#E6E6FA', '#D8BFD8', '#F0FFF0'];
+
+    let currentRotation = 0;
+    let spinning = false;
+
+    function saveMenuItems() {
+      localStorage.setItem('menuItems', JSON.stringify(menuItems));
+    }
+
+    function getClickedIndex(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (clientX - rect.left) * (canvas.width / rect.width);
+      const y = (clientY - rect.top) * (canvas.height / rect.height);
+      const dx = x - center;
+      const dy = y - center;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > center) return -1;
+      let angle = Math.atan2(dy, dx);
+      if (angle < 0) angle += 2 * Math.PI;
+      let correctedAngle = angle - currentRotation;
+      if (correctedAngle < 0) correctedAngle += 2 * Math.PI;
+      const sliceAngle = (2 * Math.PI) / menuItems.length;
+      return Math.floor(correctedAngle / sliceAngle);
+    }
+
+    canvas.addEventListener('click', function (e) {
+      if (spinning || menuItems.length === 0) return;
+      const index = getClickedIndex(e.clientX, e.clientY);
+      if (index >= 0 && menuItems[index]) {
+        if (confirm(`'${menuItems[index]}' 메뉴를 삭제할까요?`)) {
+          menuItems.splice(index, 1);
+          saveMenuItems();
+          drawRoulette(currentRotation);
+          document.getElementById('result').textContent = '';
+        }
+      }
+    });
+
+    canvas.addEventListener('touchstart', function (e) {
+      if (spinning || menuItems.length === 0) return;
+      const touch = e.touches[0];
+      const index = getClickedIndex(touch.clientX, touch.clientY);
+      if (index >= 0 && menuItems[index]) {
+        if (confirm(`'${menuItems[index]}' 메뉴를 삭제할까요?`)) {
+          menuItems.splice(index, 1);
+          saveMenuItems();
+          drawRoulette(currentRotation);
+          document.getElementById('result').textContent = '';
+        }
+      }
+    });
+
+    function drawRoulette(rotation = 0) {
+      ctx.clearRect(0, 0, size, size);
+      const numItems = menuItems.length;
+      const anglePerSlice = (2 * Math.PI) / numItems;
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.rotate(rotation);
+
+      for (let i = 0; i < numItems; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.fillStyle = softRainbowColors[i % softRainbowColors.length];
+        ctx.arc(0, 0, center, i * anglePerSlice, (i + 1) * anglePerSlice);
+        ctx.lineTo(0, 0);
+        ctx.fill();
+
+        ctx.save();
+        ctx.rotate((i + 0.5) * anglePerSlice);
+        ctx.translate(center * 0.6, 0);
+        ctx.rotate(-(i + 0.5) * anglePerSlice);
+        ctx.fillStyle = '#000';
+        ctx.font = `${Math.max(12, center / 12)}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(menuItems[i], 0, 0);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function showFireworks() {
+      for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+          const emoji = document.createElement('div');
+          emoji.className = 'fireworks';
+          emoji.textContent = '🎉';
+          emoji.style.left = Math.random() * 100 + 'vw';
+          emoji.style.top = Math.random() * 100 + 'vh';
+          document.body.appendChild(emoji);
+          setTimeout(() => document.body.removeChild(emoji), 1000);
+        }, i * 80);
+      }
+    }
+
+    function showPopup(message) {
+      const popup = document.getElementById('popup');
+      popup.innerHTML = `<div>${message}</div><button onclick="popup.style.display='none'">확인</button>`;
+      popup.style.display = 'block';
+    }
+
+    function spinRoulette() {
+      if (spinning) return;
+      if (menuItems.length === 0) {
+        showPopup("메뉴가 없습니다. 먼저 메뉴를 추가해 주세요.");
+        return;
+      }
+      spinning = true;
+
+      const numItems = menuItems.length;
+      const totalSpins = Math.random() * 5 + 5;
+      const extraRotation = Math.random() * 360;
+      const finalDeg = totalSpins * 360 + extraRotation;
+      const targetRotation = currentRotation + (finalDeg * Math.PI / 180);
+
+      const duration = 5000;
+      const startTime = performance.now();
+
+      function animate(time) {
+        const elapsed = time - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - t, 5);
+        const current = currentRotation + (targetRotation - currentRotation) * easeOut;
+        drawRoulette(current);
+
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          currentRotation = targetRotation;
+          const finalAngle = (2 * Math.PI - (currentRotation % (2 * Math.PI))) % (2 * Math.PI);
+          const selectedIndex = Math.floor((finalAngle / (2 * Math.PI)) * numItems);
+          const selectedMenu = menuItems[selectedIndex];
+          document.getElementById('result').textContent = `오늘의 메뉴는 "${selectedMenu}" 입니다!`;
+          showFireworks();
+          showPopup(`오늘의 메뉴는 "${selectedMenu}" 입니다!`);
+          spinning = false;
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    function addMenu() {
+      const input = document.getElementById('menu-input');
+      const newMenu = input.value.trim();
+      if (newMenu && !menuItems.includes(newMenu)) {
+        menuItems.push(newMenu);
+        input.value = '';
+        saveMenuItems();
+        drawRoulette(currentRotation);
+      }
+    }
+
+    drawRoulette();
+    resizeCanvas();
+  </script>
+</body>
+</html>

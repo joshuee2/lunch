@@ -2,278 +2,258 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>점심 메뉴 룰렛</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>점심메뉴 룰렛</title>
   <style>
     body {
       font-family: 'Arial', sans-serif;
       text-align: center;
-      background: #f8f8f8;
-      padding: 20px;
-      margin: 0;
-      overflow-x: hidden;
+      background: #f4f4f4;
+      overflow: hidden;
     }
-    #roulette-container {
+
+    #wheel-container {
       position: relative;
-      width: 90vw;
-      max-width: 400px;
-      height: 90vw;
-      max-height: 400px;
-      margin: 0 auto;
+      width: 400px;
+      height: 400px;
+      margin: 30px auto;
     }
-    #roulette {
-      width: 100%;
-      height: 100%;
-      transform: rotate(0deg);
-      touch-action: manipulation;
+
+    canvas {
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid #000;
     }
-    #pointer {
+
+    #triangle-pointer {
       position: absolute;
-      top: 50%;
-      right: -25px;
-      transform: translateY(-50%) rotate(-90deg);
       width: 0;
       height: 0;
-      border-left: 15px solid transparent;
-      border-right: 15px solid transparent;
-      border-bottom: 25px solid red;
+      border-top: 20px solid transparent;
+      border-bottom: 20px solid transparent;
+      border-right: 30px solid black;
+      top: 50%;
+      left: 100%;
+      transform: translateY(-50%);
+      z-index: 10;
     }
-    button {
-      margin-top: 20px;
+
+    #spin-btn, #add-btn {
+      margin: 10px;
       padding: 10px 20px;
-      font-size: 16px;
+      font-size: 18px;
       cursor: pointer;
     }
-    #result {
-      margin-top: 20px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #333;
-    }
-    #menu-form {
-      margin-top: 20px;
+
+    #result-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
       display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
+      display: none;
+      z-index: 1000;
     }
-    #menu-input {
+
+    #result-box {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    #result-box p {
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+
+    #confirm-btn {
+      padding: 10px 20px;
+      font-size: 18px;
+      background: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    #input-area {
+      margin-top: 20px;
+    }
+
+    #new-item {
       padding: 8px;
       font-size: 16px;
-      flex: 1 1 auto;
+      width: 200px;
     }
-    @media (max-width: 480px) {
-      button, #menu-input {
-        font-size: 14px;
-      }
-      #result {
-        font-size: 16px;
-      }
-    }
-    .fireworks {
+
+    .confetti {
       position: fixed;
+      width: 10px;
+      height: 10px;
+      background: yellow;
+      z-index: 2000;
       pointer-events: none;
-      z-index: 1000;
-      font-size: 32px;
-      animation: burst 1s ease-out forwards;
-    }
-    @keyframes burst {
-      0% { opacity: 1; transform: scale(1); }
-      100% { opacity: 0; transform: scale(2); }
-    }
-    .popup {
-      position: fixed;
-      top: 30%;
-      left: 50%;
-      transform: translate(-50%, -30%);
-      background: white;
-      border: 2px solid #888;
-      padding: 30px;
-      font-size: 22px;
-      z-index: 1001;
-      box-shadow: 0 0 25px rgba(0,0,0,0.4);
-      border-radius: 10px;
-      max-width: 90vw;
-    }
-    .popup button {
-      margin-top: 15px;
-      padding: 8px 16px;
-      font-size: 16px;
-      background-color: black;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>오늘 뭐 먹지?</h1>
-  <div id="roulette-container">
-    <div id="pointer"></div>
-    <canvas id="roulette" width="400" height="400"></canvas>
+  <h1>점심메뉴 룰렛</h1>
+  <div id="wheel-container">
+    <canvas id="wheel" width="400" height="400"></canvas>
+    <div id="triangle-pointer"></div>
   </div>
-  <button onclick="spinRoulette()">돌리기</button>
-  <div id="result"></div>
-  <form id="menu-form">
-    <input type="text" id="menu-input" placeholder="새 메뉴 추가" required />
-    <button type="button" onclick="addMenu()">추가</button>
-    <button onclick="clearMenu()" style="margin-left: 10px; background-color: #e74c3c; color: white; border: none; border-radius: 4px;">전체 삭제</button>
-  </form>
-  <div id="popup" class="popup" style="display:none;"></div>
-  <audio id="cheerSound" src="https://cdn.pixabay.com/download/audio/2022/10/26/audio_194c3a2b93.mp3?filename=applause-126514.mp3"></audio>
+
+  <button id="spin-btn">돌리기!</button>
+
+  <div id="input-area">
+    <input type="text" id="new-item" placeholder="새 음식 이름 입력" />
+    <button id="add-btn">추가</button>
+  </div>
+
+  <div id="result-popup">
+    <div id="result-box">
+      <p id="result-text"></p>
+      <button id="confirm-btn">확인</button>
+    </div>
+  </div>
+
+  <audio id="cheer-sound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_f9b7f44b9a.mp3" preload="auto"></audio>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script>
-    const canvas = document.getElementById('roulette');
-    const ctx = canvas.getContext('2d');
-    let size = canvas.width;
-    let center = size / 2;
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const size = canvas.width;
+    const center = size / 2;
+    const spinBtn = document.getElementById("spin-btn");
+    const popup = document.getElementById("result-popup");
+    const resultText = document.getElementById("result-text");
+    const confirmBtn = document.getElementById("confirm-btn");
+    const cheerSound = document.getElementById("cheer-sound");
+    const newItemInput = document.getElementById("new-item");
+    const addBtn = document.getElementById("add-btn");
 
-    function resizeCanvas() {
-      const container = document.getElementById('roulette-container');
-      const rect = container.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      size = canvas.width;
-      center = size / 2;
-      drawRoulette(currentRotation);
+    let items = JSON.parse(localStorage.getItem("lunchItems")) || ["김밥", "라면", "제육", "돈까스", "파스타", "샐러드"];
+    const colors = ["#FF9999", "#FFCC99", "#FFFF99", "#CCFFCC", "#99CCFF", "#CCCCFF", "#FFCCFF"];
+    let rotation = 0;
+
+    function saveItems() {
+      localStorage.setItem("lunchItems", JSON.stringify(items));
     }
 
-    window.addEventListener('resize', resizeCanvas);
-
-    let menuItems = JSON.parse(localStorage.getItem('menuItems')) || [
-      '김치찌개', '된장찌개', '비빔밥', '불고기', '돈까스', '제육볶음', '라면', '샐러드'
-    ];
-
-    const pastelRainbowColors = [
-      '#e57373', '#f06292', '#ba68c8', '#64b5f6', '#4db6ac', '#81c784', '#ffd54f', '#ffb74d', '#a1887f'
-    ];
-
-    let currentRotation = 0;
-    let spinning = false;
-
-    function saveMenuItems() {
-      localStorage.setItem('menuItems', JSON.stringify(menuItems));
-    }
-
-    function clearMenu() {
-      if (confirm("모든 메뉴를 삭제하시겠습니까?")) {
-        menuItems = [];
-        saveMenuItems();
-        drawRoulette(currentRotation);
-        document.getElementById('result').textContent = '';
-      }
-    }
-
-    function drawRoulette(rotation = 0) {
+    function drawWheel() {
+      const anglePerItem = (2 * Math.PI) / items.length;
       ctx.clearRect(0, 0, size, size);
-      const numItems = menuItems.length;
-      if(numItems === 0) {
-        ctx.fillStyle = '#666';
-        ctx.font = '20px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('메뉴가 없습니다.', center, center);
-        return;
-      }
-      const anglePerSlice = (2 * Math.PI) / numItems;
-      ctx.save();
-      ctx.translate(center, center);
-      ctx.rotate(rotation);
+      for (let i = 0; i < items.length; i++) {
+        const startAngle = i * anglePerItem + rotation;
+        const endAngle = startAngle + anglePerItem;
 
-      for (let i = 0; i < numItems; i++) {
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.fillStyle = pastelRainbowColors[i % pastelRainbowColors.length];
-        ctx.arc(0, 0, center, i * anglePerSlice, (i + 1) * anglePerSlice);
-        ctx.lineTo(0, 0);
+        ctx.moveTo(center, center);
+        ctx.arc(center, center, center, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = colors[i % colors.length];
         ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 1;
+        ctx.stroke();
 
         ctx.save();
-        ctx.rotate((i + 0.5) * anglePerSlice);
-        ctx.translate(center * 0.5, 0); // closer to center
-        ctx.rotate(-((i + 0.5) * anglePerSlice)); // align horizontally
-        ctx.fillStyle = '#000';
-        ctx.font = `${Math.max(12, center / 12)}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.fillText(menuItems[i], 0, 0);
+        ctx.translate(center, center);
+        ctx.rotate(startAngle + anglePerItem / 2);
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#000";
+        ctx.font = "16px Arial";
+        ctx.fillText(items[i], center * 0.65, 5);
         ctx.restore();
       }
-
-      ctx.restore();
     }
 
-    function showFireworks() {
-      for (let i = 0; i < 50; i++) {
-        setTimeout(() => {
-          const emoji = document.createElement('div');
-          emoji.className = 'fireworks';
-          emoji.textContent = '🎊';
-          emoji.style.left = Math.random() * 100 + 'vw';
-          emoji.style.top = Math.random() * 100 + 'vh';
-          emoji.style.animationDuration = (Math.random() * 1 + 0.5) + 's';
-          document.body.appendChild(emoji);
-          setTimeout(() => document.body.removeChild(emoji), 1500);
-        }, i * 50);
+    function showConfetti() {
+      for (let i = 0; i < 30; i++) {
+        const confetti = document.createElement("div");
+        confetti.className = "confetti";
+        confetti.style.background = `hsl(${Math.random() * 360}, 100%, 60%)`;
+        confetti.style.left = `${Math.random() * window.innerWidth}px`;
+        confetti.style.top = `${Math.random() * window.innerHeight}px`;
+        document.body.appendChild(confetti);
+
+        gsap.to(confetti, {
+          y: Math.random() * 200 - 100,
+          x: Math.random() * 200 - 100,
+          opacity: 0,
+          duration: 1.2,
+          ease: "power1.out",
+          onComplete: () => confetti.remove()
+        });
       }
     }
 
-    function showPopup(message) {
-      const popup = document.getElementById('popup');
-      popup.innerHTML = `<div>${message}</div><button onclick="popup.style.display='none'">확인</button>`;
-      popup.style.display = 'block';
-    }
+    function getSelectedItemIndex() {
+  const anglePerItem = (2 * Math.PI) / items.length;
+  const index = Math.floor(((rotation + anglePerItem / 2) % (2 * Math.PI)) / anglePerItem);
+  return index;
+}
 
-    function spinRoulette() {
-      if (spinning || menuItems.length === 0) return;
-      spinning = true;
+    function animateSpin() {
+      const duration = 5;
+      const spins = Math.floor(Math.random() * 3 + 3);
+      const anglePerItem = (2 * Math.PI) / items.length;
+      const randomIndex = Math.floor(Math.random() * items.length);
+      const finalAngle = 2 * Math.PI * spins - (randomIndex + 0.5) * anglePerItem;
 
-      const numItems = menuItems.length;
-      const totalSpins = Math.random() * 5 + 5;
-      const extraRotation = Math.random() * 360;
-      const finalDeg = totalSpins * 360 + extraRotation;
-      const targetRotation = currentRotation + (finalDeg * Math.PI / 180);
-
-      const duration = 5000;
-      const startTime = performance.now();
-
-      function animate(time) {
-        const elapsed = time - startTime;
-        const t = Math.min(elapsed / duration, 1);
-        const easeOut = 1 - Math.pow(1 - t, 5);
-        const current = currentRotation + (targetRotation - currentRotation) * easeOut;
-        drawRoulette(current);
-
-        if (t < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          currentRotation = targetRotation % (2 * Math.PI);
-          const finalAngle = (2 * Math.PI - currentRotation) % (2 * Math.PI);
-          const selectedIndex = Math.floor(finalAngle / ((2 * Math.PI) / numItems));
-          const selectedMenu = menuItems[selectedIndex];
-          document.getElementById('result').textContent = `오늘의 메뉴는 "${selectedMenu}" 입니다!`;
-          showFireworks();
-          document.getElementById('cheerSound').play();
-          showPopup(`오늘의 메뉴는 "${selectedMenu}" 입니다!`);
-          spinning = false;
+      gsap.to(canvas, {
+        rotation: finalAngle,
+        duration: duration,
+        ease: "power4.out",
+        onUpdate: () => {
+          rotation = gsap.getProperty(canvas, "rotation") % (2 * Math.PI);
+          drawWheel();
+        },
+        onComplete: () => {
+          rotation = finalAngle % (2 * Math.PI);
+          cheerSound.play();
+          const selectedIndex = getSelectedItemIndex();
+          resultText.textContent = `오늘의 점심은: ${items[selectedIndex]}!`;
+          popup.style.display = "flex";
+          showConfetti();
         }
-      }
-
-      requestAnimationFrame(animate);
+      });
     }
 
-    function addMenu() {
-      const input = document.getElementById('menu-input');
-      const newMenu = input.value.trim();
-      if (newMenu && !menuItems.includes(newMenu)) {
-        menuItems.push(newMenu);
-        input.value = '';
-        saveMenuItems();
-        drawRoulette(currentRotation);
-        document.getElementById('result').textContent = '';
-      }
-    }
+    confirmBtn.addEventListener("click", () => {
+      popup.style.display = "none";
+    });
 
-    drawRoulette();
-    resizeCanvas();
+    addBtn.addEventListener("click", () => {
+      const newItem = newItemInput.value.trim();
+      if (newItem && !items.includes(newItem)) {
+        items.push(newItem);
+        saveItems();
+        newItemInput.value = "";
+        drawWheel();
+      }
+    });
+
+    canvas.addEventListener("click", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left - center;
+      const y = e.clientY - rect.top - center;
+      const anglePerItem = (2 * Math.PI) / items.length;
+      const angle = Math.atan2(y, x) - rotation;
+      const index = Math.floor((angle + 2 * Math.PI) % (2 * Math.PI) / anglePerItem);
+      items.splice(index, 1);
+      saveItems();
+      drawWheel();
+    });
+
+    drawWheel();
+    spinBtn.addEventListener("click", animateSpin);
   </script>
 </body>
 </html>

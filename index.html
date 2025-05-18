@@ -4,19 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>점심 메뉴 룰렛</title>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#ff6f61" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('./sw.js').then(function (registration) {
-          console.log('ServiceWorker registration successful with scope: ', registration.scope);
-        }, function (err) {
-          console.log('ServiceWorker registration failed: ', err);
-        });
-      });
-    }
-  </script>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -38,6 +25,7 @@
       width: 100%;
       height: 100%;
       transform: rotate(0deg);
+      touch-action: manipulation;
     }
     #pointer {
       position: absolute;
@@ -87,15 +75,11 @@
       pointer-events: none;
       z-index: 1000;
       font-size: 32px;
-      animation: burst 1s ease-out forwards, flash 0.3s alternate 5;
+      animation: burst 1s ease-out forwards;
     }
     @keyframes burst {
       0% { opacity: 1; transform: scale(1); }
       100% { opacity: 0; transform: scale(2); }
-    }
-    @keyframes flash {
-      from { filter: brightness(1); }
-      to { filter: brightness(2.5); }
     }
     .popup {
       position: fixed;
@@ -104,24 +88,27 @@
       transform: translate(-50%, -30%);
       background: white;
       border: 2px solid #888;
-      padding: 40px;
-      font-size: 26px;
+      padding: 30px;
+      font-size: 22px;
       z-index: 1001;
-      box-shadow: 0 0 30px rgba(0,0,0,0.5);
-      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.4);
+      border-radius: 10px;
+      max-width: 90vw;
     }
     .popup button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 18px;
-      background: black;
+      margin-top: 15px;
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: black;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 4px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
+  <h1>오늘 뭐 먹지?</h1>
   <div id="roulette-container">
     <div id="pointer"></div>
     <canvas id="roulette" width="400" height="400"></canvas>
@@ -131,10 +118,162 @@
   <form id="menu-form">
     <input type="text" id="menu-input" placeholder="새 메뉴 추가" required />
     <button type="button" onclick="addMenu()">추가</button>
+    <button onclick="clearMenu()" style="margin-left: 10px; background-color: #e74c3c; color: white; border: none; border-radius: 4px;">전체 삭제</button>
   </form>
   <div id="popup" class="popup" style="display:none;"></div>
+  <audio id="cheerSound" src="https://cdn.pixabay.com/download/audio/2022/10/26/audio_194c3a2b93.mp3?filename=applause-126514.mp3"></audio>
   <script>
-    // 기존 JavaScript 코드 이 부분에 삽입하세요 (생략됨)
+    const canvas = document.getElementById('roulette');
+    const ctx = canvas.getContext('2d');
+    let size = canvas.width;
+    let center = size / 2;
+
+    function resizeCanvas() {
+      const container = document.getElementById('roulette-container');
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      size = canvas.width;
+      center = size / 2;
+      drawRoulette(currentRotation);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    let menuItems = JSON.parse(localStorage.getItem('menuItems')) || [
+      '김치찌개', '된장찌개', '비빔밥', '불고기', '돈까스', '제육볶음', '라면', '샐러드'
+    ];
+
+    const pastelRainbowColors = [
+      '#e57373', '#f06292', '#ba68c8', '#64b5f6', '#4db6ac', '#81c784', '#ffd54f', '#ffb74d', '#a1887f'
+    ];
+
+    let currentRotation = 0;
+    let spinning = false;
+
+    function saveMenuItems() {
+      localStorage.setItem('menuItems', JSON.stringify(menuItems));
+    }
+
+    function clearMenu() {
+      if (confirm("모든 메뉴를 삭제하시겠습니까?")) {
+        menuItems = [];
+        saveMenuItems();
+        drawRoulette(currentRotation);
+        document.getElementById('result').textContent = '';
+      }
+    }
+
+    function drawRoulette(rotation = 0) {
+      ctx.clearRect(0, 0, size, size);
+      const numItems = menuItems.length;
+      if(numItems === 0) {
+        ctx.fillStyle = '#666';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('메뉴가 없습니다.', center, center);
+        return;
+      }
+      const anglePerSlice = (2 * Math.PI) / numItems;
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.rotate(rotation);
+
+      for (let i = 0; i < numItems; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.fillStyle = pastelRainbowColors[i % pastelRainbowColors.length];
+        ctx.arc(0, 0, center, i * anglePerSlice, (i + 1) * anglePerSlice);
+        ctx.lineTo(0, 0);
+        ctx.fill();
+
+        ctx.save();
+        ctx.rotate((i + 0.5) * anglePerSlice);
+        ctx.translate(center * 0.5, 0); // closer to center
+        ctx.rotate(-((i + 0.5) * anglePerSlice)); // align horizontally
+        ctx.fillStyle = '#000';
+        ctx.font = `${Math.max(12, center / 12)}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillText(menuItems[i], 0, 0);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function showFireworks() {
+      for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+          const emoji = document.createElement('div');
+          emoji.className = 'fireworks';
+          emoji.textContent = '🎊';
+          emoji.style.left = Math.random() * 100 + 'vw';
+          emoji.style.top = Math.random() * 100 + 'vh';
+          emoji.style.animationDuration = (Math.random() * 1 + 0.5) + 's';
+          document.body.appendChild(emoji);
+          setTimeout(() => document.body.removeChild(emoji), 1500);
+        }, i * 50);
+      }
+    }
+
+    function showPopup(message) {
+      const popup = document.getElementById('popup');
+      popup.innerHTML = `<div>${message}</div><button onclick="popup.style.display='none'">확인</button>`;
+      popup.style.display = 'block';
+    }
+
+    function spinRoulette() {
+      if (spinning || menuItems.length === 0) return;
+      spinning = true;
+
+      const numItems = menuItems.length;
+      const totalSpins = Math.random() * 5 + 5;
+      const extraRotation = Math.random() * 360;
+      const finalDeg = totalSpins * 360 + extraRotation;
+      const targetRotation = currentRotation + (finalDeg * Math.PI / 180);
+
+      const duration = 5000;
+      const startTime = performance.now();
+
+      function animate(time) {
+        const elapsed = time - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - t, 5);
+        const current = currentRotation + (targetRotation - currentRotation) * easeOut;
+        drawRoulette(current);
+
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          currentRotation = targetRotation % (2 * Math.PI);
+          const finalAngle = (2 * Math.PI - currentRotation) % (2 * Math.PI);
+          const selectedIndex = Math.floor(finalAngle / ((2 * Math.PI) / numItems));
+          const selectedMenu = menuItems[selectedIndex];
+          document.getElementById('result').textContent = `오늘의 메뉴는 "${selectedMenu}" 입니다!`;
+          showFireworks();
+          document.getElementById('cheerSound').play();
+          showPopup(`오늘의 메뉴는 "${selectedMenu}" 입니다!`);
+          spinning = false;
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    function addMenu() {
+      const input = document.getElementById('menu-input');
+      const newMenu = input.value.trim();
+      if (newMenu && !menuItems.includes(newMenu)) {
+        menuItems.push(newMenu);
+        input.value = '';
+        saveMenuItems();
+        drawRoulette(currentRotation);
+        document.getElementById('result').textContent = '';
+      }
+    }
+
+    drawRoulette();
+    resizeCanvas();
   </script>
 </body>
 </html>

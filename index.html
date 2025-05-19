@@ -211,6 +211,7 @@
         } else {
           const selectedAngle = (360 - (currentRotation % 360)) % 360;
           const index = Math.floor(selectedAngle / (360 / menus.length));
+          const selectedMenu = menus[index];
           showResult(menus[index]);
         }
       }
@@ -245,7 +246,7 @@
       const angle = (Math.atan2(y, x) + 2 * Math.PI) % (2 * Math.PI);
       const adjustedAngle = (angle - (currentRotation * Math.PI / 180) + 2 * Math.PI) % (2 * Math.PI);
       const index = Math.floor(adjustedAngle / (2 * Math.PI / menus.length));
-      if (confirm(`'${menus[index]}' 메뉴를 삭제할까요?`)) {
+      if (confirm(`'${selectedMenu}' 메뉴를 삭제할까요?`)) {
         menus.splice(index, 1);
         saveMenus();
         drawWheel();
@@ -257,4 +258,5 @@
   </script>
 </body>
 </html>
+
 

@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>점심메뉴 룰렛</title>
   <style>
     body {
@@ -10,34 +11,37 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      height: 100vh;
       margin: 0;
       padding-top: 20px;
     }
     h1 {
-      font-size: 32px;
-      margin-bottom: 20px;
+      font-size: 5vw;
+      margin-bottom: 5vw;
       color: #333;
+      text-align: center;
+    }
+    .wheel-container {
+      position: relative;
+      width: 90vw;
+      max-width: 400px;
     }
     #wheel {
-      width: 400px;
-      height: 400px;
+      width: 100%;
+      height: auto;
       border-radius: 50%;
-      position: relative;
       border: 5px solid #ccc;
       transform-origin: center center;
     }
     .arrow {
       width: 0;
       height: 0;
-      border-top: 12px solid transparent;
-      border-bottom: 12px solid transparent;
-      border-right: 20px solid black;
+      border-top: 3vw solid transparent;
+      border-bottom: 3vw solid transparent;
+      border-left: 5vw solid black;
       position: absolute;
       top: 50%;
-      left: 420px;
-      transform: translateY(-50%) rotate(0deg);
+      right: -6vw;
+      transform: translateY(-50%);
       z-index: 10;
     }
     #controls {
@@ -48,19 +52,21 @@
     }
     #spinBtn, #addMenuBtn {
       margin: 5px;
-      padding: 10px 20px;
-      font-size: 18px;
+      padding: 2vw 5vw;
+      font-size: 4vw;
       background-color: black;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 1vw;
       cursor: pointer;
     }
     #menuInput {
-      padding: 8px;
-      font-size: 16px;
-      width: 200px;
+      padding: 2vw;
+      font-size: 4vw;
+      width: 60vw;
       margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 1vw;
     }
     #popup {
       position: fixed;
@@ -70,41 +76,33 @@
       align-items: center;
       justify-content: center;
       visibility: hidden;
+      z-index: 1000;
     }
     #popupContent {
       background: white;
-      padding: 30px;
-      border-radius: 10px;
+      padding: 5vw;
+      border-radius: 2vw;
       text-align: center;
+      max-width: 80vw;
+    }
+    #popupContent h2 {
+      font-size: 5vw;
     }
     #popupContent button {
       margin-top: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 2vw 5vw;
+      font-size: 4vw;
       background-color: black;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 1vw;
       cursor: pointer;
-    }
-    .confetti {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background: red;
-      animation: fall 1s ease-out forwards;
-    }
-    @keyframes fall {
-      to {
-        transform: translateY(100vh) rotate(360deg);
-        opacity: 0;
-      }
     }
   </style>
 </head>
 <body>
   <h1>LUNCH MENU ROULETTE</h1>
-  <div style="position: relative; width: 460px;">
+  <div class="wheel-container">
     <div class="arrow"></div>
     <canvas id="wheel" width="400" height="400"></canvas>
   </div>
@@ -148,7 +146,7 @@
 
     function drawWheel() {
       const slice = 2 * Math.PI / menus.length;
-      const radius = 200;
+      const radius = canvas.width / 2;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (let i = 0; i < menus.length; i++) {
         ctx.beginPath();
@@ -163,8 +161,8 @@
         ctx.rotate(slice * (i + 0.5));
         ctx.textAlign = 'center';
         ctx.fillStyle = '#000';
-        ctx.font = '16px Arial';
-        ctx.fillText(menus[i], 120, 5);
+        ctx.font = `${canvas.width / 25}px Arial`;
+        ctx.fillText(menus[i], radius * 0.6, 5);
         ctx.restore();
       }
     }
@@ -215,8 +213,8 @@
 
     canvas.addEventListener('click', function (e) {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left - 200;
-      const y = e.clientY - rect.top - 200;
+      const x = e.clientX - rect.left - canvas.width / 2;
+      const y = e.clientY - rect.top - canvas.height / 2;
       const angle = (Math.atan2(y, x) + 2 * Math.PI) % (2 * Math.PI);
       const adjustedAngle = (angle - (currentRotation * Math.PI / 180) + 2 * Math.PI) % (2 * Math.PI);
       const index = Math.floor(adjustedAngle / (2 * Math.PI / menus.length));

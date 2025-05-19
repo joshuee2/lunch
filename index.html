@@ -35,13 +35,13 @@
     .arrow {
       width: 0;
       height: 0;
-      border-top: 3vw solid transparent;
-      border-bottom: 3vw solid transparent;
-      border-left: 5vw solid black;
+      border-top: 1vw solid transparent;
+      border-bottom: 1vw solid transparent;
+      border-right: 2vw solid black;
       position: absolute;
       top: 50%;
-      right: -6vw;
-      transform: translateY(-50%);
+      left: 100%;
+      transform: translateY(-50%) translateX(5px) rotate(0deg);
       z-index: 10;
     }
     #controls {
@@ -98,13 +98,27 @@
       border-radius: 1vw;
       cursor: pointer;
     }
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      animation: fall 1.5s ease-out forwards;
+      z-index: 2000;
+    }
+    @keyframes fall {
+      to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
   </style>
 </head>
 <body>
   <h1>LUNCH MENU ROULETTE</h1>
   <div class="wheel-container">
-    <div class="arrow"></div>
     <canvas id="wheel" width="400" height="400"></canvas>
+    <div class="arrow"></div>
   </div>
 
   <div id="controls">
@@ -167,6 +181,18 @@
       }
     }
 
+    function createConfetti() {
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.top = '-10px';
+        confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        document.body.appendChild(confetti);
+        setTimeout(() => confetti.remove(), 1500);
+      }
+    }
+
     function spinWheel() {
       const totalRotation = 360 * 10 + Math.floor(Math.random() * 360);
       const duration = 5000;
@@ -195,6 +221,7 @@
       resultText.textContent = `오늘 점심메뉴는 ${menu}입니다!`;
       popup.style.visibility = 'visible';
       cheerSound.play();
+      createConfetti();
     }
 
     function closePopup() {

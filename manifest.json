@@ -1,21 +1,23 @@
 {
-  "name": "점심메뉴 룰렛",
-  "short_name": "점심룰렛",
-  "start_url": "index.html",
+  "name": "40-50 남성 홈트 코치",
+  "short_name": "홈트코치",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#f2f2f2",
-  "theme_color": "#000000",
+  "background_color": "#f4f7f2",
+  "theme_color": "#123524",
+  "description": "요일별 맨손 운동 + 목표 완료 보상 영어 회화",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "./icon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icon.png",
+      "src": "./icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ]
 }
-

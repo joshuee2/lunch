@@ -8,9 +8,9 @@
   <meta name="apple-mobile-web-app-title" content="40+ 맨손 운동" />
   <meta property="og:title" content="40-50 남성 홈트 코치" />
   <meta property="og:description" content="요일별 부위 운동 + 완료 보상 영어 회화" />
-  <meta property="og:image" content="og_image.png" />
+  <meta property="og:image" content="./og_image.png" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://joshuee2.github.io/lunch/" />
+  <meta property="og:url" content="./" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.png" />
   <link rel="apple-touch-icon" href="icon.png" />
@@ -468,7 +468,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('sw.js').catch(() => {});
       });
     }
   </script>
